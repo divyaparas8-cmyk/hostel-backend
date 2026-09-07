@@ -1,0 +1,577 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  OWNER
+  STUDENT
+  STAFF
+  WARDEN
+}
+
+enum HostelStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  CO_ED
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CHECKED_OUT
+}
+
+enum PaymentMode {
+  ONLINE
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum RequestType {
+  ROOM_CHANGE
+  HOSTEL_SWITCH
+  LATE_ENTRY
+  FACILITY_CHANGE
+  OTHER
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum GatePassStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RETURNED
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACKS
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  name          String
+  email         String    @unique
+  phone         String?   @unique
+  password      String
+  role          Role      @default(STUDENT)
+  profilePhoto  String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  hostels       Hostel[]
+  bookings      Booking[]
+  maintenanceRequests  MaintenanceRequest[]
+  gatePasses    GatePass[]
+  requests      Request[]
+  rentPayments  RentPayment[]
+  messSubscriptions MessSubscription[]
+  complianceViolations ComplianceViolation[]
+  agreements  Agreement[]
+  notifications Notification[]
+  @@map("users")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String   @db.Text
+  type      String   // e.g., 'BOOKING', 'SYSTEM', 'MAINTENANCE'
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  @@map("notifications")
+}
+
+model Hostel {
+  id            Int           @id @default(autoincrement())
+  ownerId       Int
+  owner         User          @relation(fields: [ownerId], references: [id])
+  name          String
+  description   String?       @db.Text
+  address       String
+  city          String
+  state         String
+  pincode       String
+  gender        Gender
+  status        HostelStatus  @default(PENDING)
+  amenities     Json?
+  photos        Json?
+  rules         String?       @db.Text
+  totalCapacity Int           @default(0)
+  totalFloors   Int           @default(1)
+  contactName   String?
+  contactPhone  String?
+  contactEmail  String?
+  floorPricing  Json?
+  addons        Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  rooms         Room[]
+  notices       Notice[]
+  maintenanceRequests  MaintenanceRequest[]
+  messMenus     MessMenu[]
+  visitorLogs   VisitorLog[]
+  requests      Request[]
+  facilities    Facility[]
+  complianceDocuments ComplianceDocument[]
+  communications Communication[]
+  mealPlans     MealPlan[]
+  messSubscriptions MessSubscription[]
+  hostelRules   HostelRule[]
+  complianceViolations ComplianceViolation[]
+  visitorRule   VisitorRule?
+  agreements    Agreement[]
+  wifiTiers     WifiTier[]
+  parkingSlots  ParkingSlot[]
+  @@map("hostels")
+}
+
+model PlatformSetting {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  value       String   @db.Text
+  description String?
+  updatedAt   DateTime @updatedAt
+  @@map("platform_settings")
+}
+
+model Facility {
+  id           Int      @id @default(autoincrement())
+  hostelId     Int
+  hostel       Hostel   @relation(fields: [hostelId], references: [id])
+  name         String   
+  category     String   
+  totalCount   Int      @default(0)
+  workingCount Int      @default(0)
+  description  String?
+  lastChecked  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@map("facilities")
+}
+
+enum ComplianceDocType {
+  FIRE_NOC
+  BUILDING_CERTIFICATE
+  HEALTH_CERTIFICATE
+  FOOD_LICENSE
+  POLICE_VERIFICATION
+  TRADE_LICENSE
+  OTHER
+}
+
+enum ComplianceStatus {
+  ACTIVE
+  EXPIRED
+  PENDING_RENEWAL
+}
+
+model ComplianceDocument {
+  id             Int                @id @default(autoincrement())
+  hostelId       Int
+  hostel         Hostel             @relation(fields: [hostelId], references: [id])
+  documentName   String             
+  documentType   ComplianceDocType  
+  fileUrl        String             
+  issuedBy       String?            
+  issuedDate     DateTime?          
+  expiryDate     DateTime?          
+  status         ComplianceStatus   @default(ACTIVE)
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  @@map("compliance_documents")
+}
+
+enum MessageType {
+  ANNOUNCEMENT
+  ALERT
+  REMINDER
+  GENERAL
+}
+
+model Communication {
+  id          Int           @id @default(autoincrement())
+  hostelId    Int
+  hostel      Hostel        @relation(fields: [hostelId], references: [id])
+  title       String
+  message     String        @db.Text
+  type        MessageType   @default(GENERAL)
+  sentBy      Int           
+  totalSent   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  readReceipts CommunicationRead[]
+  @@map("communications")
+}
+
+model CommunicationRead {
+  id              Int           @id @default(autoincrement())
+  communicationId Int
+  communication   Communication @relation(fields: [communicationId], references: [id])
+  studentId       Int
+  readAt          DateTime      @default(now())
+  @@unique([communicationId, studentId])
+  @@map("communication_reads")
+}
+
+model Room {
+  id            Int      @id @default(autoincrement())
+  hostelId      Int
+  hostel        Hostel   @relation(fields: [hostelId], references: [id])
+  roomNumber    String
+  floor         Int?
+  capacity      Int
+  pricePerMonth Decimal  @db.Decimal(10, 2)
+  amenities     Json?
+  isAvailable   Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  beds          Bed[]
+  @@unique([hostelId, roomNumber])
+  @@map("rooms")
+}
+
+model Bed {
+  id         Int      @id @default(autoincrement())
+  roomId     Int
+  room       Room     @relation(fields: [roomId], references: [id])
+  bedNumber  String
+  isOccupied Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  bookings   Booking[]
+  @@unique([roomId, bedNumber])
+  @@map("beds")
+}
+
+model Booking {
+  id            Int           @id @default(autoincrement())
+  studentId     Int
+  student       User          @relation(fields: [studentId], references: [id])
+  bedId         Int
+  bed           Bed           @relation(fields: [bedId], references: [id])
+  status        BookingStatus @default(PENDING)
+  checkInDate      DateTime?
+  checkOutDate     DateTime?
+  purposeOfStay    String?
+  specialRequests  String?       @db.Text
+  emergencyContact String?
+  rejectionNote    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  rentPayments  RentPayment[]
+  residentFacility ResidentFacility?
+  parkingSlot   ParkingSlot?
+  @@map("bookings")
+}
+
+model RentPayment {
+  id                Int           @id @default(autoincrement())
+  bookingId         Int
+  booking           Booking       @relation(fields: [bookingId], references: [id])
+  studentId         Int
+  student           User          @relation(fields: [studentId], references: [id])
+  amount            Decimal       @db.Decimal(10, 2)
+  month             Int
+  year              Int
+  paymentMode       PaymentMode?
+  paymentStatus     PaymentStatus @default(PENDING)
+  razorpayOrderId   String?       @unique
+  razorpayPaymentId String?       @unique
+  paidAt            DateTime?
+  dueDate           DateTime
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  @@unique([bookingId, month, year])
+  @@map("rent_payments")
+}
+
+model MaintenanceRequest {
+  id          Int                 @id @default(autoincrement())
+  studentId   Int
+  student     User                @relation(fields: [studentId], references: [id])
+  hostelId    Int
+  hostel      Hostel              @relation(fields: [hostelId], references: [id])
+  title       String
+  description String              @db.Text
+  category    String?
+  priority    String?
+  photos      Json?
+  status      MaintenanceStatus   @default(OPEN)
+  resolvedAt  DateTime?
+  workerNote  String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  @@map("maintenance_requests")
+}
+
+model MessMenu {
+  id         Int        @id @default(autoincrement())
+  hostelId   Int
+  hostel     Hostel     @relation(fields: [hostelId], references: [id])
+  day        DayOfWeek
+  mealType   MealType
+  items      String     @db.Text
+  timing     String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  @@unique([hostelId, day, mealType])
+  @@map("mess_menus")
+}
+
+model Notice {
+  id          Int      @id @default(autoincrement())
+  hostelId    Int
+  hostel      Hostel   @relation(fields: [hostelId], references: [id])
+  title       String
+  content     String   @db.Text
+  isImportant Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@map("notices")
+}
+
+model GatePass {
+  id           Int            @id @default(autoincrement())
+  studentId    Int
+  student      User           @relation(fields: [studentId], references: [id])
+  purpose      String
+  destination  String
+  fromDate     DateTime
+  toDate       DateTime
+  status       GatePassStatus @default(PENDING)
+  approvedAt   DateTime?
+  returnedAt   DateTime?
+  ownerNote    String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  @@map("gate_passes")
+}
+
+model Request {
+  id          Int           @id @default(autoincrement())
+  studentId   Int
+  student     User          @relation(fields: [studentId], references: [id])
+  hostelId    Int
+  hostel      Hostel        @relation(fields: [hostelId], references: [id])
+  type        RequestType
+  description String        @db.Text
+  status      RequestStatus @default(PENDING)
+  ownerNote   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  @@map("requests")
+}
+
+model VisitorLog {
+  id              Int       @id @default(autoincrement())
+  hostelId        Int
+  hostel          Hostel    @relation(fields: [hostelId], references: [id])
+  visitorName     String
+  visitorPhone    String?
+  purposeOfVisit  String
+  residentName    String
+  roomNumber      String?
+  checkIn         DateTime  @default(now())
+  checkOut        DateTime?
+  createdAt       DateTime  @default(now())
+  @@map("visitor_logs")
+}
+
+model MealPlan {
+  id          Int       @id @default(autoincrement())
+  hostelId    Int
+  hostel      Hostel    @relation(fields: [hostelId], references: [id])
+  name        String
+  description String?
+  mealsPerDay Int       @default(3)
+  price       Decimal   @db.Decimal(10, 2)
+  icon        String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  subscriptions MessSubscription[]
+  @@map("meal_plans")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+model MessSubscription {
+  id          Int       @id @default(autoincrement())
+  studentId   Int
+  student     User      @relation(fields: [studentId], references: [id])
+  hostelId    Int
+  hostel      Hostel    @relation(fields: [hostelId], references: [id])
+  mealPlanId  Int
+  mealPlan    MealPlan  @relation(fields: [mealPlanId], references: [id])
+  status      SubscriptionStatus @default(ACTIVE)
+  startDate   DateTime  @default(now())
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@map("mess_subscriptions")
+}
+
+model HostelRule {
+  id            Int       @id @default(autoincrement())
+  hostelId      Int
+  hostel        Hostel    @relation(fields: [hostelId], references: [id])
+  title         String
+  description   String    @db.Text
+  penaltyAmount Decimal?  @db.Decimal(10, 2)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  violations    ComplianceViolation[]
+  @@map("hostel_rules")
+}
+
+enum ViolationStatus {
+  PENDING
+  PAID
+  APPEALED
+}
+
+model ComplianceViolation {
+  id          Int       @id @default(autoincrement())
+  studentId   Int
+  student     User      @relation(fields: [studentId], references: [id])
+  hostelId    Int
+  hostel      Hostel    @relation(fields: [hostelId], references: [id])
+  ruleId      Int
+  rule        HostelRule @relation(fields: [ruleId], references: [id])
+  date        DateTime  @default(now())
+  status      ViolationStatus @default(PENDING)
+  remarks     String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@map("compliance_violations")
+}
+
+enum AgreementStatus {
+  PENDING
+  SENT
+  SIGNED
+}
+
+model VisitorRule {
+  id                Int      @id @default(autoincrement())
+  hostelId          Int      @unique
+  hostel            Hostel   @relation(fields: [hostelId], references: [id])
+  startTime         String   @default("08:00")
+  endTime           String   @default("22:00")
+  maxVisitorsPerDay Int      @default(3)
+  genderPolicy      String   @default("Both")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  @@map("visitor_rules")
+}
+
+model Agreement {
+  id              Int             @id @default(autoincrement())
+  studentId       Int
+  student         User            @relation(fields: [studentId], references: [id])
+  hostelId        Int
+  hostel          Hostel          @relation(fields: [hostelId], references: [id])
+  status          AgreementStatus @default(PENDING)
+  signedDate      DateTime?
+  method          String?
+  sentDate        DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  @@unique([studentId, hostelId])
+  @@map("agreements")
+}
+
+model WifiTier {
+  id          Int      @id @default(autoincrement())
+  hostelId    Int
+  hostel      Hostel   @relation(fields: [hostelId], references: [id])
+  name        String
+  speed       String
+  price       Decimal  @db.Decimal(10, 2)
+  color       String?  @default("#3b82f6")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  residents   ResidentFacility[]
+  @@map("wifi_tiers")
+}
+
+model ParkingSlot {
+  id                Int      @id @default(autoincrement())
+  hostelId          Int
+  hostel            Hostel   @relation(fields: [hostelId], references: [id])
+  slotNumber        String
+  type              String   // Car, Bike
+  status            String   @default("Available") // Available, Occupied
+  assignedBookingId Int?     @unique
+  assignedBooking   Booking? @relation(fields: [assignedBookingId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  @@map("parking_slots")
+}
+
+model ResidentFacility {
+  id          Int       @id @default(autoincrement())
+  bookingId   Int       @unique
+  booking     Booking   @relation(fields: [bookingId], references: [id])
+  wifiTierId  Int?
+  wifiTier    WifiTier? @relation(fields: [wifiTierId], references: [id])
+  wifiStatus  String    @default("Active") // Active, Suspended
+  laundryDays Int       @default(0)
+  lockerNo    String?
+  acEnabled   Boolean   @default(false)
+  gymEnabled  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@map("resident_facilities")
+}
