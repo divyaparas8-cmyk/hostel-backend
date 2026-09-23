@@ -107,8 +107,67 @@ const getMe = async (req, res) => {
   }
 };
 
+/**
+ * Forgot password controller
+ */
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    await authService.forgotPassword(email);
+
+    return res.status(200).json({
+      success: true,
+      message: 'If an account exists for this email, a password reset link has been sent.'
+    });
+  } catch (error) {
+    console.error('Forgot Password Error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal Server Error'
+    });
+  }
+};
+
+/**
+ * Reset password controller
+ */
+const resetPassword = async (req, res) => {
+  try {
+    const { email, token, newPassword } = req.body;
+    if (!email || !token || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, token, and new password are required'
+      });
+    }
+
+    await authService.resetPassword(email, token, newPassword);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password has been reset successfully.'
+    });
+  } catch (error) {
+    console.error('Reset Password Error:', error.message);
+    const isClientError = error.message.includes('Invalid or expired');
+    return res.status(isClientError ? 400 : 500).json({
+      success: false,
+      message: error.message || 'Internal Server Error'
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
-  getMe
+  getMe,
+  forgotPassword,
+  resetPassword
 };

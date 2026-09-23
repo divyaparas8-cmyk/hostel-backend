@@ -1,0 +1,1 @@
+http://localhost:5173/reset-password?token=73adb92de17b230ce84f6a7e5bedd69ac770b1365ae0a697b9305e6d39b781ed&email=divyaparas8@gmail.com

@@ -278,6 +278,34 @@ const getAnalyticsReport = async () => {
   };
 };
 
+/**
+ * Delete a user
+ */
+const deleteUser = async (userId) => {
+  const id = Number(userId);
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new Error("User not found");
+  if (user.role === 'SUPER_ADMIN') throw new Error("Cannot delete a SUPER_ADMIN");
+
+  try {
+    // Delete non-critical relations first
+    await prisma.notification.deleteMany({ where: { userId: id } });
+    await prisma.resetToken.deleteMany({ where: { userId: id } });
+
+    // Try to delete the user
+    const deletedUser = await prisma.user.delete({
+      where: { id }
+    });
+    return deletedUser;
+  } catch (error) {
+    // P2003 is Prisma's Foreign Key Constraint Failed error
+    if (error.code === 'P2003') {
+      throw new Error("Cannot delete this user because they have active records (like Hostels or Bookings) attached to them. Please suspend the account instead or delete their records first.");
+    }
+    throw error;
+  }
+};
+
 module.exports = {
   getPlatformStats,
   getAllHostels,
@@ -286,6 +314,7 @@ module.exports = {
   getAllOwners,
   getAllStudents,
   updateUserStatus,
+  deleteUser,
   getPlatformRevenueReport,
   getAnalyticsReport
 };

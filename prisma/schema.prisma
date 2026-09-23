@@ -111,13 +111,25 @@ model User {
   complianceViolations ComplianceViolation[]
   agreements  Agreement[]
   notifications Notification[]
+  resetTokens   ResetToken[]
   @@map("users")
+}
+
+model ResetToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("reset_tokens")
 }
 
 model Notification {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   message   String   @db.Text
   type      String   // e.g., 'BOOKING', 'SYSTEM', 'MAINTENANCE'
@@ -130,7 +142,7 @@ model Notification {
 model Hostel {
   id            Int           @id @default(autoincrement())
   ownerId       Int
-  owner         User          @relation(fields: [ownerId], references: [id])
+  owner         User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name          String
   description   String?       @db.Text
   address       String
@@ -183,7 +195,7 @@ model PlatformSetting {
 model Facility {
   id           Int      @id @default(autoincrement())
   hostelId     Int
-  hostel       Hostel   @relation(fields: [hostelId], references: [id])
+  hostel       Hostel   @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   name         String   
   category     String   
   totalCount   Int      @default(0)
@@ -214,7 +226,7 @@ enum ComplianceStatus {
 model ComplianceDocument {
   id             Int                @id @default(autoincrement())
   hostelId       Int
-  hostel         Hostel             @relation(fields: [hostelId], references: [id])
+  hostel         Hostel             @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   documentName   String             
   documentType   ComplianceDocType  
   fileUrl        String             
@@ -238,7 +250,7 @@ enum MessageType {
 model Communication {
   id          Int           @id @default(autoincrement())
   hostelId    Int
-  hostel      Hostel        @relation(fields: [hostelId], references: [id])
+  hostel      Hostel        @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   title       String
   message     String        @db.Text
   type        MessageType   @default(GENERAL)
@@ -253,7 +265,7 @@ model Communication {
 model CommunicationRead {
   id              Int           @id @default(autoincrement())
   communicationId Int
-  communication   Communication @relation(fields: [communicationId], references: [id])
+  communication   Communication @relation(fields: [communicationId], references: [id], onDelete: Cascade)
   studentId       Int
   readAt          DateTime      @default(now())
   @@unique([communicationId, studentId])
@@ -263,7 +275,7 @@ model CommunicationRead {
 model Room {
   id            Int      @id @default(autoincrement())
   hostelId      Int
-  hostel        Hostel   @relation(fields: [hostelId], references: [id])
+  hostel        Hostel   @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   roomNumber    String
   floor         Int?
   capacity      Int
@@ -280,7 +292,7 @@ model Room {
 model Bed {
   id         Int      @id @default(autoincrement())
   roomId     Int
-  room       Room     @relation(fields: [roomId], references: [id])
+  room       Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
   bedNumber  String
   isOccupied Boolean  @default(false)
   createdAt  DateTime @default(now())
@@ -293,9 +305,9 @@ model Bed {
 model Booking {
   id            Int           @id @default(autoincrement())
   studentId     Int
-  student       User          @relation(fields: [studentId], references: [id])
+  student       User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
   bedId         Int
-  bed           Bed           @relation(fields: [bedId], references: [id])
+  bed           Bed           @relation(fields: [bedId], references: [id], onDelete: Cascade)
   status        BookingStatus @default(PENDING)
   checkInDate      DateTime?
   checkOutDate     DateTime?
@@ -314,9 +326,9 @@ model Booking {
 model RentPayment {
   id                Int           @id @default(autoincrement())
   bookingId         Int
-  booking           Booking       @relation(fields: [bookingId], references: [id])
+  booking           Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   studentId         Int
-  student           User          @relation(fields: [studentId], references: [id])
+  student           User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
   amount            Decimal       @db.Decimal(10, 2)
   month             Int
   year              Int
@@ -335,9 +347,9 @@ model RentPayment {
 model MaintenanceRequest {
   id          Int                 @id @default(autoincrement())
   studentId   Int
-  student     User                @relation(fields: [studentId], references: [id])
+  student     User                @relation(fields: [studentId], references: [id], onDelete: Cascade)
   hostelId    Int
-  hostel      Hostel              @relation(fields: [hostelId], references: [id])
+  hostel      Hostel              @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   title       String
   description String              @db.Text
   category    String?
@@ -354,7 +366,7 @@ model MaintenanceRequest {
 model MessMenu {
   id         Int        @id @default(autoincrement())
   hostelId   Int
-  hostel     Hostel     @relation(fields: [hostelId], references: [id])
+  hostel     Hostel     @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   day        DayOfWeek
   mealType   MealType
   items      String     @db.Text
@@ -368,7 +380,7 @@ model MessMenu {
 model Notice {
   id          Int      @id @default(autoincrement())
   hostelId    Int
-  hostel      Hostel   @relation(fields: [hostelId], references: [id])
+  hostel      Hostel   @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   title       String
   content     String   @db.Text
   isImportant Boolean  @default(false)
@@ -380,7 +392,7 @@ model Notice {
 model GatePass {
   id           Int            @id @default(autoincrement())
   studentId    Int
-  student      User           @relation(fields: [studentId], references: [id])
+  student      User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
   purpose      String
   destination  String
   fromDate     DateTime
@@ -397,9 +409,9 @@ model GatePass {
 model Request {
   id          Int           @id @default(autoincrement())
   studentId   Int
-  student     User          @relation(fields: [studentId], references: [id])
+  student     User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
   hostelId    Int
-  hostel      Hostel        @relation(fields: [hostelId], references: [id])
+  hostel      Hostel        @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   type        RequestType
   description String        @db.Text
   status      RequestStatus @default(PENDING)
@@ -412,7 +424,7 @@ model Request {
 model VisitorLog {
   id              Int       @id @default(autoincrement())
   hostelId        Int
-  hostel          Hostel    @relation(fields: [hostelId], references: [id])
+  hostel          Hostel    @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   visitorName     String
   visitorPhone    String?
   purposeOfVisit  String
@@ -427,7 +439,7 @@ model VisitorLog {
 model MealPlan {
   id          Int       @id @default(autoincrement())
   hostelId    Int
-  hostel      Hostel    @relation(fields: [hostelId], references: [id])
+  hostel      Hostel    @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   name        String
   description String?
   mealsPerDay Int       @default(3)
@@ -449,11 +461,11 @@ enum SubscriptionStatus {
 model MessSubscription {
   id          Int       @id @default(autoincrement())
   studentId   Int
-  student     User      @relation(fields: [studentId], references: [id])
+  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
   hostelId    Int
-  hostel      Hostel    @relation(fields: [hostelId], references: [id])
+  hostel      Hostel    @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   mealPlanId  Int
-  mealPlan    MealPlan  @relation(fields: [mealPlanId], references: [id])
+  mealPlan    MealPlan  @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
   status      SubscriptionStatus @default(ACTIVE)
   startDate   DateTime  @default(now())
   endDate     DateTime?
@@ -465,7 +477,7 @@ model MessSubscription {
 model HostelRule {
   id            Int       @id @default(autoincrement())
   hostelId      Int
-  hostel        Hostel    @relation(fields: [hostelId], references: [id])
+  hostel        Hostel    @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   title         String
   description   String    @db.Text
   penaltyAmount Decimal?  @db.Decimal(10, 2)
@@ -484,11 +496,11 @@ enum ViolationStatus {
 model ComplianceViolation {
   id          Int       @id @default(autoincrement())
   studentId   Int
-  student     User      @relation(fields: [studentId], references: [id])
+  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
   hostelId    Int
-  hostel      Hostel    @relation(fields: [hostelId], references: [id])
+  hostel      Hostel    @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   ruleId      Int
-  rule        HostelRule @relation(fields: [ruleId], references: [id])
+  rule        HostelRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
   date        DateTime  @default(now())
   status      ViolationStatus @default(PENDING)
   remarks     String?   @db.Text
@@ -506,7 +518,7 @@ enum AgreementStatus {
 model VisitorRule {
   id                Int      @id @default(autoincrement())
   hostelId          Int      @unique
-  hostel            Hostel   @relation(fields: [hostelId], references: [id])
+  hostel            Hostel   @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   startTime         String   @default("08:00")
   endTime           String   @default("22:00")
   maxVisitorsPerDay Int      @default(3)
@@ -519,9 +531,9 @@ model VisitorRule {
 model Agreement {
   id              Int             @id @default(autoincrement())
   studentId       Int
-  student         User            @relation(fields: [studentId], references: [id])
+  student         User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
   hostelId        Int
-  hostel          Hostel          @relation(fields: [hostelId], references: [id])
+  hostel          Hostel          @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   status          AgreementStatus @default(PENDING)
   signedDate      DateTime?
   method          String?
@@ -535,7 +547,7 @@ model Agreement {
 model WifiTier {
   id          Int      @id @default(autoincrement())
   hostelId    Int
-  hostel      Hostel   @relation(fields: [hostelId], references: [id])
+  hostel      Hostel   @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   name        String
   speed       String
   price       Decimal  @db.Decimal(10, 2)
@@ -549,12 +561,12 @@ model WifiTier {
 model ParkingSlot {
   id                Int      @id @default(autoincrement())
   hostelId          Int
-  hostel            Hostel   @relation(fields: [hostelId], references: [id])
+  hostel            Hostel   @relation(fields: [hostelId], references: [id], onDelete: Cascade)
   slotNumber        String
   type              String   // Car, Bike
   status            String   @default("Available") // Available, Occupied
   assignedBookingId Int?     @unique
-  assignedBooking   Booking? @relation(fields: [assignedBookingId], references: [id])
+  assignedBooking   Booking? @relation(fields: [assignedBookingId], references: [id], onDelete: SetNull)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   @@map("parking_slots")
@@ -563,9 +575,9 @@ model ParkingSlot {
 model ResidentFacility {
   id          Int       @id @default(autoincrement())
   bookingId   Int       @unique
-  booking     Booking   @relation(fields: [bookingId], references: [id])
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   wifiTierId  Int?
-  wifiTier    WifiTier? @relation(fields: [wifiTierId], references: [id])
+  wifiTier    WifiTier? @relation(fields: [wifiTierId], references: [id], onDelete: SetNull)
   wifiStatus  String    @default("Active") // Active, Suspended
   laundryDays Int       @default(0)
   lockerNo    String?

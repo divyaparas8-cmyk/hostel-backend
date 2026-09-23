@@ -85,6 +85,15 @@ const getAnalyticsReport = async (req, res, next) => {
   }
 };
 
+const deleteUser = async (req, res, next) => {
+  try {
+    await adminService.deleteUser(req.params.userId);
+    res.status(200).json({ success: true, message: "User deleted successfully" });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
-  getStats, getHostels, getHostelDetails, updateHostelStatus, getOwners, getStudents, updateUserStatus, getRevenueReport, getAnalyticsReport
+  getStats, getHostels, getHostelDetails, updateHostelStatus, getOwners, getStudents, updateUserStatus, deleteUser, getRevenueReport, getAnalyticsReport
 };

@@ -14,6 +14,7 @@ router.patch('/hostels/:hostelId/status', adminController.updateHostelStatus);
 router.get('/owners', adminController.getOwners);
 router.get('/students', adminController.getStudents);
 router.patch('/users/:userId/status', adminController.updateUserStatus);
+router.delete('/users/:userId', adminController.deleteUser);
 router.get('/reports/revenue', adminController.getRevenueReport);
 router.get('/reports/analytics', adminController.getAnalyticsReport);
 
